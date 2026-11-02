@@ -1,0 +1,16 @@
+{
+  "subject": "SUBJECT01",
+  "model": "../inputs/gait2392_simbody_CGM24.osim",
+  "c3d": "../inputs/static.c3d",
+  "vsk": "../inputs/subject.vsk",
+  "geometry_dir": "../inputs/Geometry",
+  "output": "../results/SUBJECT01",
+  "start": 0.5,
+  "end": 2.0,
+  "reference_height_m": 1.8,
+  "height_mm": null,
+  "height_override_confirmed": false,
+  "rotation": [-1, 0, 0, 0, 0, 1, 0, 1, 0],
+  "max_iterations": 5,
+  "overwrite": false
+}

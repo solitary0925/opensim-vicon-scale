@@ -1,0 +1,178 @@
+{
+  "RASI": {
+    "parent": "/bodyset/pelvis",
+    "location": [
+      0.02,
+      0.03,
+      0.128
+    ]
+  },
+  "LASI": {
+    "parent": "/bodyset/pelvis",
+    "location": [
+      0.02,
+      0.03,
+      -0.128
+    ]
+  },
+  "RPSI": {
+    "parent": "/bodyset/pelvis",
+    "location": [
+      -0.171,
+      0.04,
+      0.0397096
+    ]
+  },
+  "RKNE": {
+    "parent": "/bodyset/femur_r",
+    "location": [
+      0.0,
+      -0.404,
+      0.05
+    ]
+  },
+  "RKNM": {
+    "parent": "/bodyset/femur_r",
+    "location": [
+      0.0,
+      -0.4209029700805174,
+      -0.05
+    ]
+  },
+  "RANK": {
+    "parent": "/bodyset/tibia_r",
+    "location": [
+      -0.005,
+      -0.41,
+      0.053
+    ]
+  },
+  "RMED": {
+    "parent": "/bodyset/tibia_r",
+    "location": [
+      0.006,
+      -0.40132776860247155,
+      -0.038
+    ]
+  },
+  "RHEE": {
+    "parent": "/bodyset/calcn_r",
+    "location": [
+      -0.02,
+      0.02,
+      0.0
+    ]
+  },
+  "RTOE": {
+    "parent": "/bodyset/calcn_r",
+    "location": [
+      0.13,
+      0.0466586,
+      0.00196418
+    ]
+  },
+  "RVMH": {
+    "parent": "/bodyset/calcn_r",
+    "location": [
+      0.17378,
+      -0.0101631,
+      0.065
+    ]
+  },
+  "RFMH": {
+    "parent": "/bodyset/calcn_r",
+    "location": [
+      0.1889245608750139,
+      -0.005450534000866824,
+      -0.0463984
+    ]
+  },
+  "RSMH": {
+    "parent": "/bodyset/calcn_r",
+    "location": [
+      0.19858050460908294,
+      0.021536593991189436,
+      -0.009518990364716925
+    ]
+  },
+  "LKNE": {
+    "parent": "/bodyset/femur_l",
+    "location": [
+      0.0,
+      -0.404,
+      -0.05
+    ]
+  },
+  "LKNM": {
+    "parent": "/bodyset/femur_l",
+    "location": [
+      0.0,
+      -0.4209,
+      0.05
+    ]
+  },
+  "LANK": {
+    "parent": "/bodyset/tibia_l",
+    "location": [
+      -0.005,
+      -0.41,
+      -0.053
+    ]
+  },
+  "LMED": {
+    "parent": "/bodyset/tibia_l",
+    "location": [
+      0.006,
+      -0.40053651678080326,
+      0.038
+    ]
+  },
+  "LHEE": {
+    "parent": "/bodyset/calcn_l",
+    "location": [
+      -0.02,
+      0.02,
+      0.0
+    ]
+  },
+  "LTOE": {
+    "parent": "/bodyset/calcn_l",
+    "location": [
+      0.1242,
+      0.0466811,
+      -0.00337348
+    ]
+  },
+  "LVMH": {
+    "parent": "/bodyset/calcn_l",
+    "location": [
+      0.172922,
+      -0.01042784,
+      -0.065
+    ]
+  },
+  "LFMH": {
+    "parent": "/bodyset/calcn_l",
+    "location": [
+      0.19,
+      -0.005208673517853292,
+      0.0463994
+    ]
+  },
+  "LSMH": {
+    "parent": "/bodyset/calcn_l",
+    "location": [
+      0.19699573476327528,
+      0.021197002009475243,
+      0.006480902798620142
+    ]
+  },
+  "LPSI": {
+    "parent": "/bodyset/pelvis",
+    "location": [
+      -0.171535,
+      0.04,
+      -0.043
+    ]
+  }
+}

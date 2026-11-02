@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenSim Vicon 自动缩放"
+  short_description: "使用分轴方案完成 Vicon 静态 C3D 到 OpenSim 缩放与质量报告"
+  default_prompt: "使用 $opensim-vicon-scale 读取静态 C3D 和 VSK，按分轴方案缩放并生成报告。"

@@ -1,0 +1,21 @@
+{
+  "package": "opensim-vicon-scale",
+  "version": "1.1.0",
+  "tested": {
+    "python": "3.11.14",
+    "opensim": "4.5.2",
+    "numpy": "1.25.2"
+  },
+  "files": {
+    "SKILL.md": "e9b212575b3f66b0245685a1a28007cb52bfcb8599fa0be28fdca472340add6c",
+    "USAGE.md": "6809d49e872c808b174ff866d5dbadab75cfe54f8eb87fd4664484a36e23575f",
+    "agents/openai.yaml": "f5d636a38f77c3286ff7dac9d973d5c979979ce832fed2c9cdc3645022c2f230",
+    "assets/axis_scale_template.xml": "2f610b407f38e8fe057d52b38ef3ba70fadce4d2bbc66adad67b72e469f57647",
+    "assets/config.example.json": "2a901b1da01bac5811a53ff547402abf06a838c5cc4b824c92898aed0663116b",
+    "assets/model_marker_reference.json": "5bb1ff5497433a5bb156ae095a3655ba28c6250fc705848827005d8df4461fbd",
+    "scripts/iterate_scaling.py": "de4d5a7bff47778b456c609bba371e70c0227c5982af5b0e161e7173597516d2",
+    "scripts/preflight.py": "94e9b8603c39a5e64321bc15d7b7c1d2b07e94b72295a50e03748618eb938f47",
+    "scripts/run_config.py": "fdccd673bc898875e6ecb83bb92315a7f028afbe23bdde7dca24b7b1f7f87c2a",
+    "scripts/scale_subject.py": "c13e65546b7b1f29355388bdd9cc5f3003b1720f456aea5aefdcc08702fd5a14"
+  }
+}
