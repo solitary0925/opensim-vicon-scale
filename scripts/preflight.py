@@ -10,6 +10,7 @@ import re
 import sys
 import tempfile
 import xml.etree.ElementTree as ET
+from marker_alignment import plan, canonical_name, anatomical_identity, report_text
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -28,7 +29,7 @@ def check(c):
     checks = []
     def add(level, item, detail):
         checks.append(dict(level=level, item=item, detail=str(detail)))
-    allowed={'subject','model','c3d','vsk','output','geometry_dir','start','end','reference_height_m','height_mm','height_override_confirmed','rotation','max_iterations','overwrite'}
+    allowed={'subject','model','c3d','vsk','output','geometry_dir','start','end','reference_height_m','height_mm','height_override_confirmed','rotation','max_iterations','overwrite','marker_name_map'}
     if set(c)-allowed:
         add('ERROR','unknown configuration keys',sorted(set(c)-allowed))
     add('PASS', 'python', sys.version.split()[0]+' | '+sys.executable)
@@ -80,15 +81,16 @@ def check(c):
             if source_id and source_id[0].upper()!=c.get('subject','').upper():
                 add('WARN','VSK subject identity','Filename ID differs from requested subject; verify identity.')
     except Exception as e:add('ERROR','VSK parse',e)
-    model=None;names=[]
+    model=None;names=[];alignment=None;canonical_targets={}
     try:
         if paths.get('model',Path()).is_file():
             model=ET.parse(paths['model']);defs={e.get('name'):e for e in model.iter('Marker')};names=list(defs)
+            canonical_defs={anatomical_identity(n,c.get('marker_name_map',{}).get(n)):e for n,e in defs.items()}
             reference=json.loads((ROOT/'assets/model_marker_reference.json').read_text(encoding='utf-8'))
             mismatch=[]
             for n,v in reference.items():
-                if n not in defs:mismatch.append(n+': absent');continue
-                e=defs[n];loc=list(map(float,e.findtext('location').split()))
+                if n not in canonical_defs:mismatch.append(n+': absent');continue
+                e=canonical_defs[n];loc=list(map(float,e.findtext('location').split()))
                 if e.findtext('socket_parent_frame')!=v['parent'] or len(loc)!=3 or any(abs(x-y)>1e-8 for x,y in zip(loc,v['location'])):mismatch.append(n+': parent/location changed')
             add('ERROR' if mismatch else 'PASS','CGM24 marker definitions',mismatch or '22 reference definitions match.')
             add('PASS' if model.findtext('.//length_units','').strip()=='meters' else 'ERROR','model units',model.findtext('.//length_units'))
@@ -131,7 +133,14 @@ def check(c):
                     try:
                         a=o.C3DFileAdapter();a.setLocationForForceExpression(o.C3DFileAdapter.ForceLocation_OriginOfForcePlate);tables=a.read(str(paths['c3d']));t=a.getMarkersTable(tables)
                         units=t.getTableMetaDataAsString('Units').strip().lower();add('PASS' if units=='mm' else 'ERROR','C3D units',units)
-                        ts=np.array(list(t.getIndependentColumn()));labels=list(t.getColumnLabels());missing=set(names)-set(labels)
+                        ts=np.array(list(t.getIndependentColumn()));labels=list(t.getColumnLabels())
+                        alignment=plan(names,labels,c.get('marker_name_map'))
+                        add('PASS' if alignment['ready'] else 'ERROR','marker name alignment',f"{alignment['renamed_count']} model names will follow C3D; "+'; '.join(alignment['errors']))
+                        if alignment['vicon_without_model']:
+                            add('WARN','Vicon points missing from model','如需使用这些候选点，需要手动添加模型点和指定身体归属/坐标：'+', '.join(alignment['vicon_without_model']))
+                        canonical_targets={alignment['identities'][n]:target for n,target in alignment['mapping'].items()}
+                        names=[alignment['mapping'].get(n,n) for n in names]
+                        missing=set(names)-set(labels)
                         add('ERROR' if missing else 'PASS','C3D marker names',sorted(missing) or f'{len(names)} model markers found.')
                         if len(ts)<2 or not np.isfinite(ts).all() or not np.all(np.diff(ts)>0):add('ERROR','C3D time','Time must be finite and strictly increasing.')
                         elif window_ok:
@@ -144,9 +153,9 @@ def check(c):
                                 if w.any():
                                     spread=float(np.nanmax(np.linalg.norm(np.nanmax(arr[w],axis=0)-np.nanmin(arr[w],axis=0),axis=1)))
                                     add('WARN' if spread>20 else 'PASS','window motion',f'Max marker range-vector norm {spread:.2f} mm; 20 mm is a screening choice, not an official standard.')
-                                    if valid_rotation and all(n in names for n in ('RASI','LASI','LTOE','LHEE')):
+                                    if valid_rotation and all(canonical_targets.get(n) in names for n in ('RASI','LASI','LTOE','LHEE')):
                                         mean=np.nanmean(arr[w],axis=0)@rotation.T
-                                        lr=mean[names.index('RASI')]-mean[names.index('LASI')];forward=mean[names.index('LTOE')]-mean[names.index('LHEE')]
+                                        lr=mean[names.index(canonical_targets['RASI'])]-mean[names.index(canonical_targets['LASI'])];forward=mean[names.index(canonical_targets['LTOE'])]-mean[names.index(canonical_targets['LHEE'])]
                                         add('PASS' if lr[2]>0 and forward[0]>0 else 'WARN','orientation screen',f'RASI-LASI model Z={lr[2]:.1f} mm; toe-heel model X={forward[0]:.1f} mm. Numerical screen only.')
                         f=a.getForcesTable(tables);labs=list(f.getColumnLabels());plates=len(labs)//3
                         if not labs or not f.getNumRows():add('WARN','forces','No force data; marker-only scaling can proceed and no force MOT is invented.')
@@ -158,7 +167,7 @@ def check(c):
         except Exception as e:add('ERROR','runtime checks',e)
         finally:os.chdir(previous)
     errors=sum(x['level']=='ERROR' for x in checks);warnings=sum(x['level']=='WARN' for x in checks)
-    return dict(ready=errors==0,status='BLOCKED' if errors else 'READY_WITH_WARNINGS' if warnings else 'READY',errors=errors,warnings=warnings,checks=checks)
+    return dict(ready=errors==0,status='BLOCKED' if errors else 'READY_WITH_WARNINGS' if warnings else 'READY',errors=errors,warnings=warnings,checks=checks,marker_alignment=alignment)
 
 
 def save_report(result, stem):
@@ -166,6 +175,7 @@ def save_report(result, stem):
     stem.with_suffix('.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     lines=['# OpenSim 运行前检查','',f"状态：**{result['status']}**；阻止运行项 {result['errors']}，提醒 {result['warnings']}。",'','检查只验证运行准备情况，不运行缩放，也不证明解剖准确性。输出写权限检查会创建并立即移除临时探针。','','| 等级 | 项目 | 说明 |','|---|---|---|']
     lines += ['| '+r['level']+' | '+r['item']+' | '+r['detail'].replace('|','/').replace('\n',' ')+' |' for r in result['checks']]
+    if result.get('marker_alignment'):lines+=['',report_text(result['marker_alignment'])]
     stem.with_suffix('.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
 
 

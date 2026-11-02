@@ -1,6 +1,6 @@
 ---
 name: opensim-vicon-scale
-description: Scale a gait2392 CGM24 OpenSim model from Vicon static C3D and VSK files using the user's axis-specific measurement scheme, export TRC and force MOT, and report assumptions and fitting quality. Use for compatible subject scaling and batch reruns, not arbitrary models or dynamic IK/ID analysis.
+description: Align OpenSim model marker names to Vicon C3D labels, report experimental points requiring manual model additions, and scale compatible gait2392 CGM24 models with VSK, axis-specific measurements and bounded marker calibration. Not for arbitrary-model adaptation or dynamic IK/ID.
 ---
 
 # Vicon to OpenSim scaling
@@ -22,6 +22,16 @@ python scripts/iterate_scaling.py --subject S02 --c3d static.c3d --vsk subject.v
 Default averaging window is 0.5–2.0 seconds. Inspect marker completeness and motion before choosing another window; the default is not an automatic stability optimum. The runner refuses a nonempty output directory unless `--overwrite` is given. Use that option only for an explicitly authorized rerun of the generated output. Do not put source data in the output directory. Original C3D/VSK/model and the user's original XML are never edited.
 
 If VSK height units or values are inconsistent, ask for confirmation rather than guessing. Pass an explicitly confirmed height via `--height-mm` through the iteration runner; both the raw VSK value and the override are recorded in metrics/report, and the VSK remains unchanged. Inspect alternative static trials for completeness and stability; record which trial/session was used and why. A subject-number mismatch in the VSK filename must be disclosed even if the person name and session folder agree.
+
+## Marker name alignment
+
+Automatically align names before scaling, changing a generated `aligned_model.osim`, never the original input model or experimental labels. `scripts/marker_alignment.py` also supports standalone alignment: pass `--model`, `--c3d`, and a separate `--output` directory. Exact matching is preferred; then compare case/punctuation, colon-delimited subject prefixes and `S<number>_`/`Subject<number>_` prefixes, plus the explicit common anatomical alias table in that module. Never guess by edit distance, coordinate proximity, or side swapping. Alias equivalence is a naming convention, not proof of identical anatomical placement.
+
+If a source model marker has no unique experimental counterpart, or several sources target the same label, write the name report and block scaling until resolved. Custom confirmed correspondences can be entered in config `marker_name_map` as original-model-name -> exact-C3D-label, or passed to the direct CLI with `--marker-map <JSON-file>`. Do not silently discard unmatched model markers.
+
+`点名称对齐报告.md` / `marker_alignment.json` record every mapping and unmapped C3D point. For Vicon candidate physical markers absent from the model, explicitly tell the user to manually add them with the correct body and local position **if they are needed for the analysis**; do not invent coordinates or auto-create markers. Heuristically separate angle/force/moment/power channels, segment coordinate-frame points, joint centers, `_m` derived points, and unlabelled `*` points, and label the separation as a name-based screen requiring verification. Extra experimental points do not block this compatible scaling scheme when all required model points are present.
+
+Rewrite measurement pairs and IK tasks to use the resulting C3D names as well. The correction loop translates names back internally so the six adjustable anatomical identities and five-round limits remain the same. Preflight checks marker body/local geometry against the reference after resolving aliases; a name match does not waive model compatibility checks. Preflight includes the alignment table without generating a modified model or starting scaling.
 
 ## Accepted measurement scheme
 

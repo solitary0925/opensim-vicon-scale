@@ -12,5 +12,6 @@
   "height_override_confirmed": false,
   "rotation": [-1, 0, 0, 0, 0, 1, 0, 1, 0],
   "max_iterations": 5,
-  "overwrite": false
+  "overwrite": false,
+  "marker_name_map": {}
 }

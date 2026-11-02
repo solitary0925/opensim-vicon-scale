@@ -1,21 +1,22 @@
 {
   "package": "opensim-vicon-scale",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "tested": {
     "python": "3.11.14",
     "opensim": "4.5.2",
     "numpy": "1.25.2"
   },
   "files": {
-    "SKILL.md": "e9b212575b3f66b0245685a1a28007cb52bfcb8599fa0be28fdca472340add6c",
-    "USAGE.md": "6809d49e872c808b174ff866d5dbadab75cfe54f8eb87fd4664484a36e23575f",
+    "SKILL.md": "0d086b432c40a56d2c28fa69478fa8c22ddb3e76db72eec3009ef2ee3536d9dd",
+    "USAGE.md": "0bf8db8d7f293f80c47172c16d7496bf2d41042e4f65671789fc13bc9b0b8c54",
     "agents/openai.yaml": "f5d636a38f77c3286ff7dac9d973d5c979979ce832fed2c9cdc3645022c2f230",
     "assets/axis_scale_template.xml": "2f610b407f38e8fe057d52b38ef3ba70fadce4d2bbc66adad67b72e469f57647",
-    "assets/config.example.json": "2a901b1da01bac5811a53ff547402abf06a838c5cc4b824c92898aed0663116b",
+    "assets/config.example.json": "60ff756b95adc8394bc2253d4cd4a47fca984f6880306a25732ecb9b83b5cecd",
     "assets/model_marker_reference.json": "5bb1ff5497433a5bb156ae095a3655ba28c6250fc705848827005d8df4461fbd",
-    "scripts/iterate_scaling.py": "de4d5a7bff47778b456c609bba371e70c0227c5982af5b0e161e7173597516d2",
-    "scripts/preflight.py": "94e9b8603c39a5e64321bc15d7b7c1d2b07e94b72295a50e03748618eb938f47",
-    "scripts/run_config.py": "fdccd673bc898875e6ecb83bb92315a7f028afbe23bdde7dca24b7b1f7f87c2a",
-    "scripts/scale_subject.py": "c13e65546b7b1f29355388bdd9cc5f3003b1720f456aea5aefdcc08702fd5a14"
+    "scripts/iterate_scaling.py": "ed97bad0ba4486f1c87120c63455562ea872772a273ba28ee468fd2953e1c9e3",
+    "scripts/marker_alignment.py": "6aeff26242f63b2acacb75ddc675487342cf5f3d61cc5d7874a0b1f13b56905b",
+    "scripts/preflight.py": "f677f9d3dcca35275bdb305498349b19793a172a4f35f0c232000b1570b49389",
+    "scripts/run_config.py": "f30d2202dab81748079937aeea06fdaec832b9181f231c1ea11cd485a391b4b7",
+    "scripts/scale_subject.py": "0bf0406dbe25226113823b439d1db311e4e81c6a4348ed788ad67366b7fbe1c9"
   }
 }

@@ -31,3 +31,23 @@ python scripts/run_config.py --config my_config.json --report reports/preflight
 `overwrite` 默认 false，保护已有结果；确认需要重跑时设置 true。`max_iterations` 最大为 5，包括初始轮次。身高单位不明时先核实；只有明确确认后才填写 `height_mm`，同时设置 `height_override_confirmed=true`，原始 VSK 不变。
 
 每次迭代和最终结果的目录结构、六个可调点、移动限制、评分及生物力学局限见 SKILL.md 和输出报告。自动校准不能替代人工解剖点位检查或动态 IK 验证。
+
+## 自动对齐模型点名
+
+预检查会先比对模型与 C3D 点名。正式运行会生成 `aligned_model.osim`，将能可靠匹配的模型点改成 Vicon 的原始标签，同时更新缩放测量和 IK 配置。原始模型、标记坐标、所属身体分段和 C3D 标签不会因此改变。支持大小写、标点、常见受试者前缀及内置别名，例如 `L.ASIS` → `LASI`；不按拼写相似度猜测。
+
+存在多个候选或模型点找不到实验对应时会停止，要求人工确认。已确认的自定义对应可以写入配置，例如：
+
+```json
+"marker_name_map": {"L.ASIS": "ParticipantA:LASI"}
+```
+
+键为原模型点名，值为 C3D 中完整标签，目标必须实际存在且一一对应。身体分段和局部坐标仍需满足该模型的适用约束，改名不是更换模型的自动适配。
+
+`点名称对齐报告.md` 与 `marker_alignment.json` 列出对应关系和缺失项。Vicon 中存在而模型没有的候选实验点，如需参与分析，需要手动添加模型点并确定身体归属及局部位置。程序不会自动生成它们。角度、力、虚拟点等通道另列供核实，不会把所有 C3D 点通道都当成待添加的实测标记。
+
+只做名称对齐、不缩放，也可运行：
+
+```text
+python scripts/marker_alignment.py --model inputs/model.osim --c3d inputs/static.c3d --output aligned_model
+```

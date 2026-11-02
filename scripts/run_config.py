@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 import subprocess
 import sys
+import json
 from preflight import load_config, check, save_report
 
 
@@ -21,6 +22,10 @@ def main():
     for key in ('subject','model','c3d','vsk','output','geometry_dir','start','end','reference_height_m','height_mm','max_iterations'):
         if c.get(key) is not None:cmd+=['--'+key.replace('_','-'),str(c[key])]
     if c.get('rotation') is not None:cmd+=['--rotation']+[str(v) for v in c['rotation']]
+    if c.get('marker_name_map'):
+        mapping_path=Path(args.report).resolve().with_suffix('.marker_map.json')
+        mapping_path.write_text(json.dumps(c['marker_name_map'],ensure_ascii=False,indent=2),encoding='utf-8')
+        cmd+=['--marker-map',str(mapping_path)]
     if c.get('overwrite',False):cmd+=['--overwrite']
     subprocess.run(cmd,check=True)
 

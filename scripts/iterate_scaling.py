@@ -11,6 +11,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 import numpy as np
+from marker_alignment import canonical_name, rename_tree
 
 RUNNER = Path(__file__).with_name('scale_subject.py').resolve()
 ADJUSTABLE = {'LFMH', 'LSMH', 'LVMH', 'RFMH', 'RSMH', 'RVMH'}
@@ -24,11 +25,12 @@ def location(e):
     return np.array(list(map(float, e.findtext('location').split())))
 
 
-def propose(original, current, final, scales):
+def propose(original, current, final, scales, identities=None):
     """Correct only forefoot points, in unscaled coordinates; geometry stays original."""
     orig, cur, placed = markers(original), markers(current), markers(final)
+    identities=identities or {n:canonical_name(n) for n in orig}
     changes = []
-    for name in sorted(ADJUSTABLE & orig.keys()):
+    for name in sorted(n for n in orig if identities[n] in ADJUSTABLE):
         body = cur[name].findtext('socket_parent_frame').split('/')[-1]
         scale = np.array(scales[body])
         # Automatic MarkerPlacer local displacement expressed back on the original body.
@@ -52,7 +54,8 @@ def propose(original, current, final, scales):
     candidate = {n:location(e) for n,e in cur.items()}
     candidate.update({c['marker']:np.array(c['to_unscaled_m']) for c in changes})
     for side in ('L', 'R'):
-        sequence = [side+s for s in ('FMH','SMH','VMH')]
+        by_canonical={identities[n]:n for n in orig}
+        sequence = [by_canonical.get(side+s,side+s) for s in ('FMH','SMH','VMH')]
         if all(n in orig for n in sequence):
             for a,b in zip(sequence,sequence[1:]):
                 if (location(orig[b])[2]-location(orig[a])[2])*(candidate[b][2]-candidate[a][2]) <= 0:
@@ -140,7 +143,9 @@ def main():
         print(f"{args.subject} trial {i}: RMS={d['rms_mm']:.3f} Max={d['max_error_mm']:.3f}",flush=True)
         if i==args.max_iterations:
             break
-        changes=propose(original,current,ET.parse(trial/f'{args.subject}_scaled.osim'),d['scales'])
+        final_tree=ET.parse(trial/f'{args.subject}_scaled.osim')
+        rename_tree(final_tree,{target:source for source,target in d['marker_alignment']['mapping'].items()})
+        changes=propose(original,current,final_tree,d['scales'],d['marker_alignment']['identities'])
         if not changes:
             break
     if best is None:

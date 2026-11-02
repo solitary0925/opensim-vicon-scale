@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 import opensim as osim
+from marker_alignment import plan, rename_tree, save_plan, canonical_name
 
 TEMPLATE = Path(__file__).resolve().parents[1] / 'assets' / 'axis_scale_template.xml'
 
@@ -27,6 +28,7 @@ def parse_args():
     p.add_argument('--height-mm', type=float, help='Explicit user-confirmed height override; preserve original VSK.')
     p.add_argument('--rotation', nargs=9, type=float, default=[-1, 0, 0, 0, 0, 1, 0, 1, 0])
     p.add_argument('--overwrite', action='store_true')
+    p.add_argument('--marker-map', help='JSON mapping original model names to exact C3D labels')
     return p.parse_args()
 
 
@@ -77,7 +79,7 @@ def export_forces(table, output, rotation):
     return {'plates': plates, 'rows': len(times), 'mean_vertical_N': float(values[:, 1::9].sum(axis=1).mean()), 'rate_hz': float(1/np.median(np.diff(times)))}
 
 
-def configure(args, names, mass, height, output):
+def configure(args, names, mass, height, output, canonical_to_target):
     root = ET.parse(TEMPLATE)
     tool = root.getroot().find('ScaleTool')
     tool.set('name', args.subject)
@@ -92,6 +94,8 @@ def configure(args, names, mass, height, output):
         node.find('marker_file').text = 'static_markers.trc'
         node.find('time_range').text = f'{args.start} {args.end}'
     sc = tool.find('ModelScaler')
+    for pair in sc.findall('.//MarkerPair/markers'):
+        pair.text=' '.join(canonical_to_target.get(n,n) for n in pair.text.split())
     sc.find('output_model_file').text = 'scaled_only.osim'
     sc.find('output_scale_file').text = 'applied_scales.xml'
     sc.find('./ScaleSet/objects/Scale/scales').text = ' '.join([str(height/1000/args.reference_height_m)]*3)
@@ -160,6 +164,10 @@ def write_report(args, d):
 - 测力：{force_text} `static_forces_origin.mot` 使用测力台原点处力矩和作用点，单位 N、m、N·m；不可与 COP 点和自由力矩混用。[官方 C3D 文档](https://opensimconfluence.atlassian.net/wiki/spaces/OpenSim/pages/53090837)。
 - `{args.subject}_static_pose.mot` 是静态关节坐标，与测力 MOT 不同。`scaled_only.osim` 是标记放置前模型，`{args.subject}_scaled.osim` 为最终输出，配置为 `scale_setup.xml`，实际尺度为 `applied_scales.xml`，可复核日志为 `scale_run.log`。
 - `metrics.json` 保存指标和输入 SHA256，`Geometry/` 保存显示几何。源数据未修改。本次为用户授权覆盖既有生成结果的分轴版本。
+
+## 点名称对齐
+
+已将 {d['marker_alignment']['renamed_count']} 个模型点重命名为 C3D 原始标签；坐标和身体归属未因改名而改变。详见 `点名称对齐报告.md` 和 `marker_alignment.json`。Vicon 中有 {len(d['marker_alignment']['vicon_without_model'])} 个额外候选点没有模型对应；若需参与分析，必须手动添加模型点并确定身体归属及局部坐标。疑似角度、力、虚拟点等单独列出，不自动作为实测标记添加。
 '''
     (args.output/'缩放报告.md').write_text(text, encoding='utf-8')
 
@@ -185,11 +193,22 @@ def main():
         height = args.height_mm
     if not (0 < mass < 500 and 300 < height < 3000):
         raise ValueError('VSK mass/height invalid for kg/mm convention.')
-    names = list(marker_defs(args.model))
+    source_model=args.model
+    model_tree=ET.parse(source_model)
+    original_names=[e.get('name') for e in model_tree.iter('Marker')]
     adapter = osim.C3DFileAdapter()
     adapter.setLocationForForceExpression(osim.C3DFileAdapter.ForceLocation_OriginOfForcePlate)
     tables = adapter.read(str(args.c3d))
     markers = adapter.getMarkersTable(tables)
+    explicit=json.loads(Path(args.marker_map).read_text(encoding='utf-8-sig')) if args.marker_map else None
+    alignment=plan(original_names,list(markers.getColumnLabels()),explicit)
+    save_plan(alignment,args.output)
+    if not alignment['ready']:
+        raise ValueError('Marker name alignment unresolved; see 点名称对齐报告.md. No scaling executed.')
+    canonical_to_target={alignment['identities'][n]:target for n,target in alignment['mapping'].items()}
+    args.model=args.output/'aligned_model.osim'
+    rename_tree(model_tree,alignment['mapping']).write(args.model,encoding='utf-8',xml_declaration=True)
+    names=[alignment['mapping'][n] for n in original_names]
     if markers.getTableMetaDataAsString('Units').strip().lower() != 'mm':
         raise ValueError('Native conversion currently requires C3D marker units mm.')
     times = np.array(list(markers.getIndependentColumn()))
@@ -217,7 +236,7 @@ def main():
     geometry = args.output/'Geometry'
     geometry.mkdir(exist_ok=True)
     for name in sorted({e.text.strip() for e in ET.parse(args.model).iter('mesh_file') if e.text}):
-        candidates = [args.model.parent/name, args.model.parent/'Geometry'/name]
+        candidates = [source_model.parent/name, source_model.parent/'Geometry'/name]
         if args.geometry_dir:
             candidates.append(Path(args.geometry_dir)/name)
         src = next((p for p in candidates if p.is_file()), None)
@@ -232,7 +251,7 @@ def main():
     state = original.initSystem()
     original_mass = original.getTotalMass(state)
     fractions = {original.getBodySet().get(i).getName(): original.getBodySet().get(i).getMass()/original_mass for i in range(original.getBodySet().getSize())}
-    configure(args, names, mass, height, args.output)
+    configure(args, names, mass, height, args.output,canonical_to_target)
     log_path = args.output/'scale_run.log'
     osim.Logger.removeFileSink()
     log_path.write_text('', encoding='utf-8')
@@ -270,7 +289,8 @@ def main():
              marker_movements_mm=movements, scales={n:scales[n] for n in scales if n in bodies},
              force=force, rotation=rotation.tolist(), missing_geometry=missing_geometry,
              mass_fraction_max_abs_error=fraction_error,
-             source_sha256={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in (args.model,args.c3d,args.vsk,TEMPLATE)})
+             marker_alignment=alignment,
+             source_sha256={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in (source_model,args.model,args.c3d,args.vsk,TEMPLATE)})
     if fraction_error > 1e-6:
         raise RuntimeError('Relative body masses were not preserved.')
     (args.output/'metrics.json').write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding='utf-8')
